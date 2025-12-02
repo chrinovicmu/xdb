@@ -1,8 +1,11 @@
+#include <csignal>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <libxdb/libxdb.hpp> 
 #include <iostream>
+#include <memory>
 #include <sched.h>
 #include <sstream>
 #include <string_view>
@@ -10,116 +13,91 @@
 #include <editline/readline.h>
 #include <string>
 #include <vector>
+#include <libxdb/process.hpp>
 
 namespace {
 
-    std::vector<std::string> spit(std::string_view str, char delimiter){
+std::vector<std::string> spit(std::string_view str, char delimiter){
+
+    std::vector<std::string> ret{}; 
+    std::std::stringstream ss {std::string{str}}; 
+    std::string item; 
+
+    while(std::getline(ss, item, delimiter)){
+        out.pushback(item); 
+    }
+    return ret; 
+}   
+
+bool is_prefix(std::string_view str, std::string_view of){
     
-        std::vector<std::string> ret{}; 
-        std::std::stringstream ss {std::string{str}}; 
-        std::string item; 
+    if(str.size() > of.size())
+        return false; 
 
-        while(std::getline(ss, item, delimiter)){
-            out.pushback(item); 
-        }
-        return ret; 
-    }   
-
-    bool is_prefix(std::string_view str, std::string_view of){
-        
-        if(str.size() > of.size())
-            return false; 
-
-        return std::equal(str.begin(), str.end(), of.begin()); 
-    }
-
-    void resume(pid_t pid){
-
-        if(ptrace(PTRACE_CONT, pid, nullptr, nullptr) < 0){
-            std::cerr << "Couldn't continue\n ";
-            std::exit(-1); 
-        }       
-    }
-
-    void wait_on_signal(pid_t pid){
-        
-        int wait_status;
-        int options = 0; 
-
-        if(waitpid(pid, &wait_status, options) < 0){
-            std::perror("waitpid failed");
-            std::exit(-1); 
-        }
-        
-    }
-    pid_t attach(int argc, const char **argv){
-
-        pid_t pid = 0; 
-        
-        if(argc == 3 && argv[1] == std::string_view("-p")){
-            pid = std::atoi(argv[2]); 
-            if(pid <= 0){
-                std::cerr "Invalid pid\n"; 
-                return -1; 
-            }
-
-            if(ptrace(PTRACE_ATTACH, pid, nullptr, nullptr) < 0){
-                std::perror("Could not attach pid"); 
-                return -1; 
-            }    
-        }
-        else{
-            if((pid = fork()) < 0){
-                std::perror("fork failed"); 
-                return -1; 
-            }
-            
-            if(pid == 0){
-                /*child process */ 
-                
-                if(ptrace(PTRACE_TRACEME, 0, nullptr, nullptr) < 0){
-                    std::perror("Tracing failed");
-                    return -1; 
-                }
-            }
-        } 
-        
-    }
-
-    void handle_command(pid_t pid, std::string_view line){
-        
-        auto args = split(line, ' '); 
-        auto command = args[0]; 
-        
-        if(is_prefix(command, "coninue")){
-            resume(pid); 
-            wait_on_signal(pid); 
-
-        }
-        else{
-            std::cerr  << "Unknown command\n"; 
-    }
-        
-    }
-
+    return std::equal(str.begin(), str.end(), of.begin()); 
 }
-int main (int argc, char **argv) {
 
-    if(argc == 1){
-        std::cerr << "No arguments given\n"; 
-        return -1; 
+std::unique_ptr<xdb::process> attach(int argc, const char **argv){
+
+    
+    if(argc == 3 && argv[1] == std::string_view("-p")){
+        
+        pid_t pid = std::atoi(argv[2]); 
+        return xdb::process::attach_proc(pid); 
     }
 
-    pid_t pid = attach(argc, argv);
+    else{
+        const char * program_path = argv[1]; 
+        return xdb::process::launch_proc(program_path);  
+    }
+ 
+}
+    
+void print_stop_reason(const xdb::process& process, xdb::stop_reason reason){
 
-    int wait_status; 
-    int options = 0; 
+    std::cout << "pid " << "process.pid()" << ' '; 
 
-    if(waitpid(pid, &wait_status, options) < 0){
-        std::perror("waitpid failed"); 
+    switch (reason.reason){
+
+        case xdb::process_state::EXITED:
+            std::cout << "exited with status " 
+                << static_cast<int>(reason.info);
+            break; 
+
+        case xdb::process_state::TERMINATED:
+            std::cout << "terminated with signal "
+                << sigabbrev_np(reason.info);
+            break; 
+
+        case xdb::process_state::STOPPED:
+            std::cout << "stopped with signal "
+                << sigabbrev_np(reason.info); 
+            break; 
 
     }
 
+    std::cout << std::endl; 
+}
+
+void handle_command(std::unique_ptr<xdb::process>& process, 
+                    std::string_view){
+    
+    auto args = split(line, ' '); 
+    auto command = args[0]; 
+    
+    if(is_prefix(command, "coninue")){
+        process->resume(); 
+        auto reason = process->wait_on_signal(); 
+        print_stop_reason(*process, reason)
+
+    }
+    else{
+        std::cerr  << "Unknown command\n"; 
+    }
+}
+
+void main_loop(std::unique_ptr<xdb::process>& process){
+    
     char *line = nullptr; 
     
     while((line = readline("xdb> ")) != nullptr){
@@ -141,9 +119,30 @@ int main (int argc, char **argv) {
         }
 
         if(!line_str.empty()){
-            handle_command(pid, line_str); 
+            try {
+                handle_command(process, line_str); 
+            }
+            catch(const xdb::error& err){
+                std::cout << err.err() << '\n'; 
+            }
         }
     }
-    return 0;
+}
+}
+
+int main (int argc, char **argv) {
+
+    if(argc == 1){
+        std::cerr << "No arguments given\n"; 
+        return -1; 
+    }
+
+    try{
+        auto process = attach(argc, **argv); 
+        main_loop(process); 
+    }
+    catch (const xdb::error& err){
+        std::cout << err.err() << '\n';
+    }
 }
 

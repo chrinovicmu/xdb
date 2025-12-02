@@ -1,5 +1,6 @@
 add_library(libxdb libxdb.cpp) 
 add_library(xdb::libxdb ALAIS libxdb)
+add_library(libxdb process.cpp)
 
 set_target_properties(
     libxdb
