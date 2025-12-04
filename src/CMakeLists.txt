@@ -1,18 +1,23 @@
-add_library(libxdb libxdb.cpp) 
-add_library(xdb::libxdb ALAIS libxdb)
-add_library(libxdb process.cpp)
 
-set_target_properties(
-    libxdb
-    PROPERTIES OUTPUT_NAME xdb 
+# src/CMakeLists.txt
+
+# Define library with all source files in src/
+add_library(libxdb
+    process.cpp
 )
 
-target_compile_features(libxdb PUBLIC cxx_std_17) 
+# Optional alias for imported-style target
+add_library(xdb::libxdb ALIAS libxdb)
 
-target_include_features(
+# Output name
+set_target_properties(libxdb PROPERTIES OUTPUT_NAME xdb)
+
+# Include directories (so #include <libxdb/...> works)
+target_include_directories(
     libxdb
-    PRIVATE include 
-    PUBLIC $(CMAKE_SOURCE_DIR)/include
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/include
 )
 
-
+# C++ standard
+target_compile_features(libxdb PUBLIC cxx_std_17)

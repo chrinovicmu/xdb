@@ -100,7 +100,7 @@ void xdb::process::resume(){
     _state = xdb::process_state::RUNNNING;   
 }
 
-xb::stop_reason xdb::process::wait_on_signal(){
+xdb::stop_reason xdb::process::wait_on_signal(){
     
     int wait_status;
     int options = 0; 
