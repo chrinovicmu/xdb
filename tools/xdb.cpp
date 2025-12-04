@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <libxdb/libxdb.hpp> 
 #include <iostream>
 #include <memory>
 #include <sched.h>
@@ -14,17 +13,17 @@
 #include <string>
 #include <vector>
 #include <libxdb/process.hpp>
-
+#include <libxdb/error.hpp> 
 namespace {
 
-std::vector<std::string> spit(std::string_view str, char delimiter){
+std::vector<std::string> split(std::string_view str, char delimiter){
 
     std::vector<std::string> ret{}; 
-    std::std::stringstream ss {std::string{str}}; 
+    std::stringstream ss {std::string{str}}; 
     std::string item; 
 
     while(std::getline(ss, item, delimiter)){
-        out.pushback(item); 
+        ret.push_back(item); 
     }
     return ret; 
 }   
@@ -37,7 +36,7 @@ bool is_prefix(std::string_view str, std::string_view of){
     return std::equal(str.begin(), str.end(), of.begin()); 
 }
 
-std::unique_ptr<xdb::process> attach(int argc, const char **argv){
+std::unique_ptr<xdb::process> attach(int argc, char **argv){
 
     
     if(argc == 3 && argv[1] == std::string_view("-p")){
@@ -80,7 +79,7 @@ void print_stop_reason(const xdb::process& process, xdb::stop_reason reason){
 }
 
 void handle_command(std::unique_ptr<xdb::process>& process, 
-                    std::string_view){
+                    std::string_view line){
     
     auto args = split(line, ' '); 
     auto command = args[0]; 
@@ -88,7 +87,7 @@ void handle_command(std::unique_ptr<xdb::process>& process,
     if(is_prefix(command, "coninue")){
         process->resume(); 
         auto reason = process->wait_on_signal(); 
-        print_stop_reason(*process, reason)
+        print_stop_reason(*process, reason); 
 
     }
     else{
@@ -123,7 +122,7 @@ void main_loop(std::unique_ptr<xdb::process>& process){
                 handle_command(process, line_str); 
             }
             catch(const xdb::error& err){
-                std::cout << err.err() << '\n'; 
+                std::cout << err.what() << '\n'; 
             }
         }
     }
@@ -138,11 +137,11 @@ int main (int argc, char **argv) {
     }
 
     try{
-        auto process = attach(argc, **argv); 
+        auto process = attach(argc, argv); 
         main_loop(process); 
     }
     catch (const xdb::error& err){
-        std::cout << err.err() << '\n';
+        std::cout << err.what() << '\n';
     }
 }
 
