@@ -4,6 +4,7 @@
 # Define library with all source files in src/
 add_library(libxdb
     process.cpp
+    pipe.cpp 
 )
 
 # Optional alias for imported-style target

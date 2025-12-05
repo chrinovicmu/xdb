@@ -7,11 +7,25 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <libxdb/process.hpp> 
+#include <libxdb/pipe.hpp> 
 #include <libxdb/error.hpp> 
 
+namespace{
+
+void exit_with_perror(XDB::Pipe& channel,
+                      std::string const& prefix){
+    auto message = prefix + ": " + std::strerror(errno); 
+
+    channel.write(reinterpret_cast<std::byte*>(message.data()), message.size()); 
+    exit(-1); 
+}
+
+}
 /*static method that launches a new process to be debugged */ 
 std::unique_ptr<XDB::Process> XDB::Process::launch_proc(
     std::filesystem::path path){
+
+    bool terminate_on_end = true; 
 
     pid_t pid; 
     if((pid = fork()) < 0){
@@ -20,19 +34,32 @@ std::unique_ptr<XDB::Process> XDB::Process::launch_proc(
 
 
     if(pid == 0){
-
+        
+        channel.close_read(); 
         /*allow tracing by parent process */ 
         if(ptrace(PTRACE_TRACEME, 0, nullptr, nullptr) < 0){
-            XDB::Error::send_errno("Tracing failed"); 
+            exit_with_perror(channel, "Tracing failed")
         }
 
         /*replace child proces image with process at $PATH*/
         if(execlp(path.c_str(), path.c_str(), nullptr) < 0){
-            XDB::Error::send_errno("exec failed"); 
+            exit_with_perror(channel, "exec failed"); 
         }   
     }
 
-    std::unique_ptr<Process> proc (new Process(pid, /*terminate_on_end*/true)); 
+    /*collect pipe content*/ 
+    channel.close_write(); 
+    auto data = channel.read(); 
+    channel.close_read(); 
+
+    /*if channel has data, throw an execption */ 
+    if(data.size() > 0){
+        waitpid(pid, nullptr, 0); 
+        auto chars s= reinterpret_cast(char*)(data.data()); 
+        XDB::Error::send(std::string(chars, char + data.size()));
+    }
+
+    std::unique_ptr<Process> proc (new Process(pid, terminate_on_end)); 
     proc->wait_on_signal(); 
 
     return proc; 
@@ -41,6 +68,10 @@ std::unique_ptr<XDB::Process> XDB::Process::launch_proc(
 
 /*attach debugger to already running process */ 
 std::unique_ptr<XDB::Process> XDB::Process::attach_proc(pid_t pid){
+
+    bool close_on_exec = true; 
+
+    XDB::Pipe channel(close_on_exec); 
 
     if(pid == 0){
         XDB::Error::send("Invalid PID");
