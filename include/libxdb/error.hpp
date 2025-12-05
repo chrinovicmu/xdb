@@ -4,22 +4,22 @@
 #include <cstring>
 #include <string>
 
-namespace xdb {
+namespace XDB {
 
-class error: public std::runtime_error{
+class Error: public std::runtime_error{
 
 public:
     [[noreturn]] 
     static void send(const std::string& err){
-        throw error(err); 
+        throw Error(err); 
     }
 
     [[noreturn]]
     static void send_errno(const std::string& prefix){
-        throw error(prefix + ": " + std::strerror(errno)); 
+        throw Error(prefix + ": " + std::strerror(errno)); 
     }
 private:
-    error(const std::string& err) : std::runtime_error(err) {}
+    Error(const std::string& err) : std::runtime_error(err) {}
 }; 
 
 }

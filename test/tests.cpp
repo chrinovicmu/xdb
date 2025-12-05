@@ -13,6 +13,6 @@ bool process_exits(pid_t pid){
 }
 
 TEST_CASE("xdb::process::launch sucess", "[process]"){
-    auto proc = xdb::process::launch_proc("yes"); 
+    auto proc = XDB::Process::launch_proc("yes"); 
     REQUIRE(process_exits(proc->pid())); 
 }

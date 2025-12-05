@@ -36,39 +36,39 @@ bool is_prefix(std::string_view str, std::string_view of){
     return std::equal(str.begin(), str.end(), of.begin()); 
 }
 
-std::unique_ptr<xdb::process> attach(int argc, char **argv){
+std::unique_ptr<XDB::Process> attach(int argc, char **argv){
 
     
     if(argc == 3 && argv[1] == std::string_view("-p")){
         
         pid_t pid = std::atoi(argv[2]); 
-        return xdb::process::attach_proc(pid); 
+        return XDB::Process::attach_proc(pid); 
     }
 
     else{
         const char * program_path = argv[1]; 
-        return xdb::process::launch_proc(program_path);  
+        return XDB::Process::launch_proc(program_path);  
     }
  
 }
     
-void print_stop_reason(const xdb::process& process, xdb::stop_reason reason){
+void print_stop_reason(const XDB::Process& process, XDB::StopReason reason){
 
     std::cout << "pid " << "process.pid()" << ' '; 
 
     switch (reason.reason){
 
-        case xdb::process_state::EXITED:
+        case XDB::ProcessState::EXITED:
             std::cout << "exited with status " 
                 << static_cast<int>(reason.info);
             break; 
 
-        case xdb::process_state::TERMINATED:
+        case XDB::ProcessState::TERMINATED:
             std::cout << "terminated with signal "
                 << sigabbrev_np(reason.info);
             break; 
 
-        case xdb::process_state::STOPPED:
+        case XDB::ProcessState::STOPPED:
             std::cout << "stopped with signal "
                 << sigabbrev_np(reason.info); 
             break; 
@@ -78,7 +78,7 @@ void print_stop_reason(const xdb::process& process, xdb::stop_reason reason){
     std::cout << std::endl; 
 }
 
-void handle_command(std::unique_ptr<xdb::process>& process, 
+void handle_command(std::unique_ptr<XDB::Process>& process, 
                     std::string_view line){
     
     auto args = split(line, ' '); 
@@ -95,7 +95,7 @@ void handle_command(std::unique_ptr<xdb::process>& process,
     }
 }
 
-void main_loop(std::unique_ptr<xdb::process>& process){
+void main_loop(std::unique_ptr<XDB::Process>& process){
     
     char *line = nullptr; 
     
@@ -121,7 +121,7 @@ void main_loop(std::unique_ptr<xdb::process>& process){
             try {
                 handle_command(process, line_str); 
             }
-            catch(const xdb::error& err){
+            catch(const XDB::Error& err){
                 std::cout << err.what() << '\n'; 
             }
         }
@@ -140,7 +140,7 @@ int main (int argc, char **argv) {
         auto process = attach(argc, argv); 
         main_loop(process); 
     }
-    catch (const xdb::error& err){
+    catch (const XDB::Error& err){
         std::cout << err.what() << '\n';
     }
 }

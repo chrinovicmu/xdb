@@ -5,50 +5,50 @@
 #include <memory>
 #include <sys/types.h> 
 
-namespace xdb {
+namespace XDB {
 
-enum class process_state{
+enum class ProcessState{
     STOPPED, 
     RUNNNING,
     EXITED,
     TERMINATED 
 }; 
 
-struct stop_reason{
-    stop_reason(int wait_status); 
-    process_state reason; 
+struct StopReason{
+    StopReason(int wait_status); 
+    ProcessState reason; 
     std::uint8_t info; 
 }; 
 
-class process{
+class Process{
 
 public:
 
-    process() = delete; 
-    process(const process&) = delete; 
-    process& operator = (const process&) = delete; 
+    Process() = delete; 
+    Process(const Process&) = delete; 
+    Process& operator = (const Process&) = delete; 
 
-    static std::unique_ptr<process> launch_proc(std::filesystem::path path); 
-    static std::unique_ptr<process> attach_proc(pid_t pid); 
+    static std::unique_ptr<Process> launch_proc(std::filesystem::path path); 
+    static std::unique_ptr<Process> attach_proc(pid_t pid); 
         
     void resume(); 
-    struct stop_reason wait_on_signal(); 
+    struct StopReason wait_on_signal(); 
 
     pid_t pid() const {
         return _pid;
     }
 
-    process_state state() const {
+    ProcessState state() const {
         return _state; 
     }
-    ~process(); 
+    ~Process(); 
 
 
 private:
     pid_t _pid = 0;    
     bool _terminate_on_end = true; 
-    process_state _state = process_state::STOPPED;
-    process(pid_t pid, bool terminate_on_end) : _pid(pid), _terminate_on_end((terminate_on_end)){}
+    ProcessState _state = ProcessState::STOPPED;
+    Process(pid_t pid, bool terminate_on_end) : _pid(pid), _terminate_on_end((terminate_on_end)){}
 }; 
 
 
