@@ -14,20 +14,20 @@ public:
         return _fds[read_fd]; 
     }
     int get_write() const {
-        return _fds[write_fs]; 
+        return _fds[write_fd]; 
     }
 
     int release_read();
     int release_write();
-    int close_read();
-    int close_write(); 
+    void close_read();
+    void close_write(); 
 
     std::vector<std::byte> read();
     void write(std::byte* from, std::size_t bytes); 
 
 private:
-    static constexpr unsigned read_fs = 0; 
-    static constexpr unsigned write_fs = 1; 
+    static constexpr unsigned read_fd = 0; 
+    static constexpr unsigned write_fd = 1; 
 
     int _fds[2]; 
 

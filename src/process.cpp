@@ -26,6 +26,7 @@ std::unique_ptr<XDB::Process> XDB::Process::launch_proc(
     std::filesystem::path path){
 
     bool terminate_on_end = true; 
+    XDB::Pipe channel(terminate_on_end); 
 
     pid_t pid; 
     if((pid = fork()) < 0){
@@ -38,7 +39,7 @@ std::unique_ptr<XDB::Process> XDB::Process::launch_proc(
         channel.close_read(); 
         /*allow tracing by parent process */ 
         if(ptrace(PTRACE_TRACEME, 0, nullptr, nullptr) < 0){
-            exit_with_perror(channel, "Tracing failed")
+            exit_with_perror(channel, "Tracing failed"); 
         }
 
         /*replace child proces image with process at $PATH*/
@@ -55,8 +56,8 @@ std::unique_ptr<XDB::Process> XDB::Process::launch_proc(
     /*if channel has data, throw an execption */ 
     if(data.size() > 0){
         waitpid(pid, nullptr, 0); 
-        auto chars s= reinterpret_cast(char*)(data.data()); 
-        XDB::Error::send(std::string(chars, char + data.size()));
+        auto chars = reinterpret_cast<char*>(data.data()); 
+        XDB::Error::send(std::string(chars, chars + data.size()));
     }
 
     std::unique_ptr<Process> proc (new Process(pid, terminate_on_end)); 

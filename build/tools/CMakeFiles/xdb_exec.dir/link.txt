@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/xdb_exec.dir/xdb.cpp.o -o xdb_exec  ../src/libxdb.a /home/chrinovic/vcpkg/installed/x64-linux/lib/libedit.a -ltinfo -lncurses 

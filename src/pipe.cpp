@@ -19,7 +19,7 @@ XDB::Pipe::Pipe(bool close_on_exec){
 
 XDB::Pipe::~Pipe(){
     close_read(); 
-    closr_write(); 
+    close_write(); 
 }
 
 int XDB::Pipe::release_read(){
@@ -37,7 +37,7 @@ void XDB::Pipe::close_read(){
     }
 }
 
-void XDB::Pipe:;close_write(){
+void XDB::Pipe::close_write(){
     if(_fds[write_fd] != 1){
         close(_fds[write_fd]); 
         _fds[write_fd] = 1; 
@@ -54,12 +54,12 @@ std::vector<std::byte> XDB::Pipe::read(){
     }
 
     /*convert buf to vector of bytes and return vector */ 
-    auto bytes = std::reinterpret_cast<std::byte*>(buf); 
+    auto bytes = reinterpret_cast<std::byte*>(buf); 
     return std::vector<std::byte>(bytes, bytes + chars_read); 
 }
 
 void XDB::Pipe::write(std::byte* buf, std::size_t bytes){
-    if(::write(_fds[write_fd], buf, size) < 0){
+    if(::write(_fds[write_fd], buf, bytes) < 0){
         XDB::Error::send_errno("Could not write to pipe"); 
     }
 }

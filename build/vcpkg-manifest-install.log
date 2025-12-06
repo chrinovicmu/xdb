@@ -1,0 +1,27 @@
+Detecting compiler hash for triplet x64-linux...
+Compiler found: /usr/bin/c++
+The following packages are already installed:
+    catch2:x64-linux@3.11.0
+    libedit:x64-linux@2024-08-08
+  * vcpkg-cmake:x64-linux@2024-04-23
+  * vcpkg-cmake-config:x64-linux@2024-05-23
+catch2 provides CMake targets:
+
+  # this is heuristically generated, and may not be correct
+  find_package(Catch2 CONFIG REQUIRED)
+  target_link_libraries(main PRIVATE Catch2::Catch2 Catch2::Catch2WithMain)
+
+catch2 provides pkg-config modules:
+
+  # A modern, C++-native test framework for C++14 and above (links in default main)
+  catch2-with-main
+
+  # A modern, C++-native, test framework for C++14 and above
+  catch2
+
+libedit provides pkg-config modules:
+
+  # command line editor library provides generic line editing, history, and tokenization functions.
+  libedit
+
+All requested installations completed successfully in: 61.3 us
