@@ -1,5 +1,0 @@
-add_test( [==[xdb::Process::launch no program]==] /home/chrinovic/Workspace/Projects/xdb/build/test/tests [==[xdb::Process::launch no program]==]  )
-set_tests_properties( [==[xdb::Process::launch no program]==] PROPERTIES WORKING_DIRECTORY /home/chrinovic/Workspace/Projects/xdb/build/test SKIP_RETURN_CODE 4)
-add_test( [==[xdb::process::launch sucess]==] /home/chrinovic/Workspace/Projects/xdb/build/test/tests [==[xdb::process::launch sucess]==]  )
-set_tests_properties( [==[xdb::process::launch sucess]==] PROPERTIES WORKING_DIRECTORY /home/chrinovic/Workspace/Projects/xdb/build/test SKIP_RETURN_CODE 4)
-set( tests_TESTS [==[xdb::Process::launch no program]==] [==[xdb::process::launch sucess]==])

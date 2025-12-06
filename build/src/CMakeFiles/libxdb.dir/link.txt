@@ -1,2 +1,0 @@
-/usr/bin/ar qc libxdb.a CMakeFiles/libxdb.dir/process.cpp.o CMakeFiles/libxdb.dir/pipe.cpp.o
-/usr/bin/ranlib libxdb.a
