@@ -28,7 +28,9 @@ public:
     Process(const Process&) = delete; 
     Process& operator = (const Process&) = delete; 
 
-    static std::unique_ptr<Process> launch_proc(std::filesystem::path path); 
+    static std::unique_ptr<Process> launch_proc(
+        std::filesystem::path path, bool debug = true); 
+
     static std::unique_ptr<Process> attach_proc(pid_t pid); 
         
     void resume(); 
@@ -46,13 +48,20 @@ public:
 
 private:
     pid_t _pid = 0;    
-    bool _terminate_on_end = true; 
+    bool _terminate_on_end = true;
+    bool is_attached = true; 
+
     ProcessState _state = ProcessState::STOPPED;
-    Process(pid_t pid, bool terminate_on_end) : _pid(pid), _terminate_on_end((terminate_on_end)){}
+    Process(pid_t pid, bool terminate_on_end, bool is_attached): 
+        _pid(pid),
+        _terminate_on_end(terminate_on_end),
+        is_attched(is_attached)
+   
+    {}
 }; 
 
 
-}
+} /*namespace XDB */  
 
 
 

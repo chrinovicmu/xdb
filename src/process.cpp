@@ -23,7 +23,7 @@ void exit_with_perror(XDB::Pipe& channel,
 }
 /*static method that launches a new process to be debugged */ 
 std::unique_ptr<XDB::Process> XDB::Process::launch_proc(
-    std::filesystem::path path){
+    std::filesystem::path path, bool debug){
 
     bool terminate_on_end = true; 
     XDB::Pipe channel(terminate_on_end); 
@@ -38,7 +38,7 @@ std::unique_ptr<XDB::Process> XDB::Process::launch_proc(
         
         channel.close_read(); 
         /*allow tracing by parent process */ 
-        if(ptrace(PTRACE_TRACEME, 0, nullptr, nullptr) < 0){
+        if(debug and ptrace(PTRACE_TRACEME, 0, nullptr, nullptr) < 0){
             exit_with_perror(channel, "Tracing failed"); 
         }
 
@@ -60,8 +60,10 @@ std::unique_ptr<XDB::Process> XDB::Process::launch_proc(
         XDB::Error::send(std::string(chars, chars + data.size()));
     }
 
-    std::unique_ptr<Process> proc (new Process(pid, terminate_on_end)); 
-    proc->wait_on_signal(); 
+    std::unique_ptr<Process> proc (new Process(pid, terminate_on_end, debug)); 
+
+    if(debug)
+        proc->wait_on_signal(); 
 
     return proc; 
 
@@ -92,14 +94,16 @@ XDB::Process::~Process(){
     if(_pid != 0){
 
         int status; 
-        if(state() == ProcessState::RUNNNING){
-            kill(_pid, SIGSTOP); 
-            waitpid(_pid, &status, 0); 
+
+        if(is_attached){
+            if(state() == ProcessState::RUNNNING){
+                 kill(_pid, SIGSTOP); 
+                waitpid(_pid, &status, 0); 
+            }
+
+            ptrace(PTRACE_DETACH, _pid, nullptr, nullptr); 
+            kill(_pid, SIGCONT);
         }
-
-        ptrace(PTRACE_DETACH, _pid, nullptr, nullptr); 
-        kill(_pid, SIGCONT);
-
         if(_terminate_on_end){
             kill(_pid, SIGKILL);
             waitpid(_pid, &status, 0); 
