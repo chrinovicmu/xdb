@@ -1,5 +1,6 @@
 #pragma once 
 
+#include "types.hpp"
 #include <cstddef>
 #include <cstring>
 
@@ -20,6 +21,20 @@ std::byte* as_bytes(From &from){
 template<class From>
 const std::byte* as_bytes(From& from){
     return reinterpret_cast<const std::byte*>(&from); 
+}
+
+template <class From>
+byte64 to_byte64(From src){
+    byte64 ret{}; 
+    std::memcpy(&ret, &src, sizeof(From)); 
+    return ret; 
+}
+
+template <class From>
+byte128 to_byte128(From src){
+    byte128 ret{}; 
+    std::memcpy(&ret, &src, sizeof(From)); 
+    return ret; 
 }
 
 }

@@ -1,4 +1,7 @@
+#include <cerrno>
 #include <csignal>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <sched.h>
 #include <sys/ptrace.h>
@@ -158,3 +161,36 @@ XDB::StopReason XDB::Process::wait_on_signal(){
 
     return reason; 
 }
+
+void XDB::Process::read_all_registers(){
+    
+    if(ptrace(PTRACE_GETREGS, _pid, nullptr, &get_registers()._data.regs) < 0){
+        XDB::Error::senf_errno("Could not read GPR registers"); 
+    }
+    if(ptrace(PTRACE_GETFPREGS, _pid, nullptr, &get_regesters()._data.i387) < 0){
+        XDB::Error::send_errno("Could not read FPR registers"); 
+    }
+
+    /*read debug registers */ 
+    for(int i = 0; i < 8; ++i){
+    
+        auto id = static_cast<int>(XDB::RegisterID::dr0) + i; 
+        auto info = XDB::register_info_by_id(static_cast<RegisterID>(id)); 
+
+        errno = 0; 
+        std::int64_t data = ptrace(PTRACE_PEEKUSER, _pid, info.offset, nullptr); 
+        if(errno != 0) 
+           XDB::Error::send_errno("Could no read debug register"); 
+
+        get_registers()._data.u_debugreg[i] = data; 
+    }
+}
+
+void XDB::Process::write_user_area(std::size_t offset, std::uint64_t data){
+    if(ptrace(PTRACE_POKEUSER, pid, offset, data) < 0){
+        XDB::Error::send_errno("Could not write to user area");
+    }
+}
+
+
+
