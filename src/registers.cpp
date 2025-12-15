@@ -42,12 +42,21 @@ void XDB::Registers::write(const RegisterInfo& info, value val){
         if(sizeof(v) == info.size){
             auto val_bytes = as_bytes(v); 
             std::copy(val_bytes, val_bytes + sizeof(v), bytes + info.offset); 
-        } 
+         } 
         else{
             std::cerr << "XDB::Registers::write called with mismatched register and value size"; 
             std::terminate(); 
         }
     },val);
 
-    _proc->write_user_area(info.offset, from_bytes(std::uint64_t(bytes + info.offset)); 
+    if(info.type == RegisterType::FPR){
+        _proc->write_fprs(data.i387); 
+    }
+    else{
+        auto aligned_offset = info.offset & ~0b111; 
+        _proc->write_user_area(aligned_offset, from_bytes(std::uint64_t(bytes + aligned_offset));
+    }
+
+
+
 }

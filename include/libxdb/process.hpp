@@ -7,6 +7,7 @@
 #include <memory>
 #include <sys/types.h> 
 #include <libxdb/registers.hpp> 
+#include <sys/user.h>
 
 namespace XDB {
 
@@ -55,8 +56,10 @@ public:
         return *_registers; 
     }
 
-    void write_user_area(std::size_t offset, std::uint64_t data); 
+    void write_user_area(std::size_t offset, std::uint64_t data);
 
+    void write_fprs(const user_fpregs_struct& fprs); 
+    void write_gprs(const user_regs_struct& gprs); 
 
 private:
     pid_t _pid = 0;    

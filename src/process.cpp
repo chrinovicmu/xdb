@@ -6,6 +6,7 @@
 #include <sched.h>
 #include <sys/ptrace.h>
 #include <sys/types.h>
+#include <sys/user.h>
 #include <sys/wait.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -159,13 +160,17 @@ XDB::StopReason XDB::Process::wait_on_signal(){
     StopReason reason(wait_status); 
     _state = reason.reason; 
 
+    if(_is_attached and _state == XDB::ProcessState::STOPPED){
+        read_all_registers(); 
+    }
+
     return reason; 
 }
 
 void XDB::Process::read_all_registers(){
     
     if(ptrace(PTRACE_GETREGS, _pid, nullptr, &get_registers()._data.regs) < 0){
-        XDB::Error::senf_errno("Could not read GPR registers"); 
+        XDB::Error::send_errno("Could not read GPR registers"); 
     }
     if(ptrace(PTRACE_GETFPREGS, _pid, nullptr, &get_regesters()._data.i387) < 0){
         XDB::Error::send_errno("Could not read FPR registers"); 
@@ -189,6 +194,17 @@ void XDB::Process::read_all_registers(){
 void XDB::Process::write_user_area(std::size_t offset, std::uint64_t data){
     if(ptrace(PTRACE_POKEUSER, pid, offset, data) < 0){
         XDB::Error::send_errno("Could not write to user area");
+    }
+}
+
+void XDB::Process::write_fprs(const user_fpregs_struct& fprs){
+    if(ptrace(PTRACE_SETFPREGS, _pid, nullptr, &fprs) < 0){
+        XDB::Error::send_ernno("Could not write floating point registers"); 
+    }
+}
+void XDB::Process::write_gprs(const user_regs_struct& gprs){
+    if(ptrace(PTRACE_SETREGS, _pid, nullptr, &gprs) < 0){
+        XDB::Error::send_errno("Could not write to general purpose registers"); 
     }
 }
 
