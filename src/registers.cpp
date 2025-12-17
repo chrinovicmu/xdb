@@ -2,7 +2,36 @@
 #include <cstdint>
 #include <libxdb/registers.hpp>
 #include <libxdb/bit.hpp> 
+#include <type_traits>
 
+namespace{
+
+template <class T>
+XDB::byte128 widen(const XDB::RegisterInfo& info, T t){
+    
+    if constexpr (std::is_floating_point_v<T>){
+        if(info.format == XDB::RegisterFormat::DOUBLE_FLOAT)
+            return to_byte128(static_cast<double>(t)); 
+        
+        if(info.format == XDB::RegisterFormat::LONG_DOUBLE)
+            return to_byte128(static_cast<long double>(t)); 
+    }
+
+    else if constexpr(std::is_signed_v<T>){
+        if(info.format == XDB::RegisterFormat::UINT){
+
+            switch(info.size){
+                case 2: return to_byte128(static_cast<std::int16_t>(t)); 
+                case 4: return to_byte128(static_cast<std::int32_t>(t)); 
+                case 8: return to_byte128(static_cast<std::int32_t>(t)); 
+            }
+        }
+    }
+
+    return to_byte128(t)
+}
+
+}
 XDB::Registers::value XDB::Registers::read(const RegisterInfo& info) const {
     auto bytes = _as_bytes(_data); 
 
@@ -40,8 +69,10 @@ void XDB::Registers::write(const RegisterInfo& info, value val){
 
     std::visit([&](auto & v){
         if(sizeof(v) == info.size){
-            auto val_bytes = as_bytes(v); 
-            std::copy(val_bytes, val_bytes + sizeof(v), bytes + info.offset); 
+            auto wide = widen(info, v); 
+            auto val_bytes = as_bytes(wide); 
+
+            std::copy(val_bytes, val_bytes + info.size, bytes + info.offset); 
          } 
         else{
             std::cerr << "XDB::Registers::write called with mismatched register and value size"; 
