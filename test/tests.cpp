@@ -41,3 +41,15 @@ TEST_CASE("XDB::Process::attach_proc success", "[Process]"){
     REQUIRE(get_proces_status(target->pid()) == 't'); 
 }
 
+TEST_CASE("Write register works", "[register]"){
+    bool close_on_exec = false; 
+    XDB::Pipe channel(close_on_exec); 
+
+    auto proc = XDB::Process::launch("targets/reg_write", true, 
+                                     channel.get_write()); 
+    channel.close_write(); 
+
+    proc->resume(); 
+    proc->wait_on_signal(); 
+
+}

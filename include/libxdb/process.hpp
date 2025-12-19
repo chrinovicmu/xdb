@@ -33,7 +33,10 @@ public:
     Process& operator = (const Process&) = delete; 
 
     static std::unique_ptr<Process> launch_proc(
-        std::filesystem::path path, bool debug = true); 
+        std::filesystem::path path,
+        bool debug = true, 
+        std::optional<int> stdout_replacement = std::nullopt)
+    ; 
 
     static std::unique_ptr<Process> attach_proc(pid_t pid); 
         

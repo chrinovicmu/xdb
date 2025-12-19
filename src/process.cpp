@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <sched.h>
 #include <sys/ptrace.h>
 #include <sys/types.h>
@@ -27,7 +28,9 @@ void exit_with_perror(XDB::Pipe& channel,
 }
 /*static method that launches a new process to be debugged */ 
 std::unique_ptr<XDB::Process> XDB::Process::launch_proc(
-    std::filesystem::path path, bool debug){
+    std::filesystem::path path,
+    bool debug,
+    std::optional<int> stdout_replacement){
 
     bool terminate_on_end = true; 
     XDB::Pipe channel(terminate_on_end); 
@@ -37,8 +40,13 @@ std::unique_ptr<XDB::Process> XDB::Process::launch_proc(
         XDB::Error::send_errno("fork failed"); 
     }
 
-
     if(pid == 0){
+
+        if(stdout_replacement){
+            if(dup2(*stdout_replacement, STDOUT_FILENO) < 0){
+                exit_with_perror(channel, "stdout failed"); 
+            }
+        }
         
         channel.close_read(); 
         /*allow tracing by parent process */ 
